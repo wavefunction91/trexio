@@ -58,6 +58,12 @@ set_target_properties(trexio PROPERTIES
 	PUBLIC_HEADER ${TREXIO_PUBLIC_HEADERS}
 	)
 
+# Set TREXIO include paths in a install-safe manner
+target_include_directories(trexio PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:install>
+)
+
 # ============= CONFIGURE HDF5 ==============
 
 # By defaulti, TREXIO is configured with the HDF5 support.
@@ -84,10 +90,12 @@ if(ENABLE_HDF5)
   list(APPEND TREXIO_PRIVATE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/trexio_hdf5.h)
   # - define symbol HAVE_HDF5=1 (used to activate HDF5 back end in the preprocessor conditionals)
   target_compile_definitions(trexio PUBLIC "HAVE_HDF5")
-  # - include directories with HDF5 header files
-  target_include_directories(trexio PRIVATE ${HDF5_C_INCLUDE_DIRS})
-  # - link to HDF5 C libraries
-  target_link_libraries(trexio PRIVATE ${HDF5_C_LIBRARIES})
+  ## - include directories with HDF5 header files
+  #target_include_directories(trexio PRIVATE ${HDF5_C_INCLUDE_DIRS})
+  ## - link to HDF5 C libraries
+  #target_link_libraries(trexio PRIVATE ${HDF5_C_LIBRARIES})
+  # Link TREXIO to HDF5 via provided target
+  target_link_libraries(trexio PUBLIC HDF5::HDF5)
 endif()
 
 # Private headers have to be listed as sources, otherwise they are installed
@@ -101,7 +109,7 @@ include(FortranCInterface)
 FortranCInterface_VERIFY()
 
 # Fortran module
-set(TREXIO_MOD_FILE ${CMAKE_SOURCE_DIR}/include/trexio_f.f90)
+set(TREXIO_MOD_FILE ${PROJECT_SOURCE_DIR}/include/trexio_f.f90)
 # Export to parent scope so tests directory picks this up.
 set(TREXIO_MOD_FILE ${TREXIO_MOD_FILE} PARENT_SCOPE)
 # Add TREXIO Fortran module as a library.
@@ -115,7 +123,7 @@ if(TREXIO_DEVEL)
   set(ORG_FILES
 	templates_front/templator_front.org
   	templates_text/templator_text.org
-	${CMAKE_SOURCE_DIR}/trex.org
+	${PROJECT_SOURCE_DIR}/trex.org
 	)
   if(ENABLE_HDF5)
     list(APPEND ORG_FILES templates_hdf5/templator_hdf5.org)
@@ -127,8 +135,8 @@ if(TREXIO_DEVEL)
 	  ${TREXIO_PRIVATE_HEADERS}
 	  ${TREXIO_MOD_FILE}
       COMMAND ./build_trexio.sh
-      DEPENDS ${ORG_FILES} ${CMAKE_SOURCE_DIR}/include/config.h
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tools
+      DEPENDS ${ORG_FILES} ${PROJECT_SOURCE_DIR}/include/config.h
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tools
       COMMENT "Generating TREXIO source code from org-mode files."
       VERBATIM)
 
@@ -146,22 +154,37 @@ include(GNUInstallDirs)
 # Use standard GNU directories for installation of TREXIO (e.g. /usr/local/lib|include).
 # The installation prefix can be modified using -DCMAKE_INSTALL_PREFIX=<custom/path> option of cmake.
 install(TARGETS trexio
+    EXPORT trexio-targets
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 	)
+add_library(trexio::trexio ALIAS trexio) # Name install and build target the same
+set_target_properties(trexio PROPERTIES EXPORT_NAME trexio)
 # Also install trexio_f.f90 file with TREXIO Fortran module.
 install(FILES ${TREXIO_MOD_FILE} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# Export install targets
+export(EXPORT trexio-targets NAMESPACE trexio:: 
+      FILE "${PROJECT_BINARY_DIR}/trexio-targets.cmake")
+
+# Export target to script
+set( INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/trexio )
+install( EXPORT trexio-targets
+  FILE         trexio-targets.cmake
+  NAMESPACE    trexio::
+  DESTINATION  ${INSTALL_CONFIGDIR}
+)
 
 # Uninstall target, copied from CMake FAQ:
 # https://gitlab.kitware.com/cmake/community/wikis/FAQ#can-i-do-make-uninstall-with-cmake
 if(NOT TARGET uninstall)
   configure_file(
-    "${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    "${PROJECT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+    "${PROJECT_BINARY_DIR}/cmake_uninstall.cmake"
     IMMEDIATE @ONLY)
 
   add_custom_target(uninstall
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+    COMMAND ${CMAKE_COMMAND} -P ${PROJECT_BINARY_DIR}/cmake_uninstall.cmake)
 endif()
 
 # ===========================================

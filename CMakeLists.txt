@@ -16,7 +16,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # Optional configure for developer mode to generate source code from org-mode files.
 option(TREXIO_DEVEL "TREXIO developer mode (for code generation)." OFF)
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/.devel")
+if(EXISTS "${PROJECT_SOURCE_DIR}/.devel")
   set(TREXIO_DEVEL ON)
   find_package(Python3 REQUIRED)
   if(Python3_FOUND)
@@ -48,13 +48,10 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/.devel")
   set(TREXIO_USER_NAME $ENV{USER})
   # replace placeholders in the templace config.h.in file to produce config.h
   # config.h is needed to insert TREXIO_PACKAGE_VERSION and TREXIO_GIT_HASH into trexio.h
-  configure_file(${CMAKE_SOURCE_DIR}/include/cmake_config.h.in
-                 ${CMAKE_SOURCE_DIR}/include/config.h
+  configure_file(${PROJECT_SOURCE_DIR}/include/cmake_config.h.in
+                 ${PROJECT_SOURCE_DIR}/include/config.h
 		 @ONLY)
 endif()
-
-# Set directories to be included at build time.
-include_directories(include)
 
 # Add subdirectory with add_library(trexio) specifications.
 add_subdirectory(src)
