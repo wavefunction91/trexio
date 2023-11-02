@@ -90,10 +90,6 @@ if(ENABLE_HDF5)
   list(APPEND TREXIO_PRIVATE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/trexio_hdf5.h)
   # - define symbol HAVE_HDF5=1 (used to activate HDF5 back end in the preprocessor conditionals)
   target_compile_definitions(trexio PUBLIC "HAVE_HDF5")
-  ## - include directories with HDF5 header files
-  #target_include_directories(trexio PRIVATE ${HDF5_C_INCLUDE_DIRS})
-  ## - link to HDF5 C libraries
-  #target_link_libraries(trexio PRIVATE ${HDF5_C_LIBRARIES})
   # Link TREXIO to HDF5 via provided target
   target_link_libraries(trexio PUBLIC HDF5::HDF5)
 endif()
